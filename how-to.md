@@ -288,3 +288,143 @@ class DoctorsController < ApplicationController
 end
 ~~~
 
+### Views and assets
+
+**app/views/layouts/application.html.haml**
+
+~~~haml
+%html
+  %head
+    %meta(charset='utf-8')
+    %meta(http-equiv='X-UA-Compatible' content='IE=Edge,chrome=1')
+    %meta(name='viewport' content='initial-scale=1.0')
+    %title Sinatra Demo App. Doctor Finder
+    = stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true
+    = javascript_include_tag 'application', 'data-turbolinks-track' => true
+  %body
+    %header
+    = yield
+~~~
+
+**app/views/home/index.html.haml**
+
+~~~haml
+.advisors.container
+  .advisor.panel.panel-default
+    .panel-heading Find drugs and doctors
+    .panel-body
+      %p
+        Please enter age, symptoms and allergies(optional) to find drugs and doctors
+      %form.form-horizontal
+        .form-group
+          %label.col-sm-2.control-label.required Age
+          .col-sm-10
+            %input.age.form-control(placeholder='Your age' type='text')/
+        .form-group
+          %label.col-sm-2.control-label.required Symptoms
+          .col-sm-10
+            %select.symptoms(multiple)
+              - @symptoms.each do |symptom|
+                %option{name: symptom.name, value: symptom.name}= symptom.name
+        .form-group
+          %label.col-sm-2.control-label Allergies
+          .col-sm-10
+            %select.allergies(multiple)
+              - @allergies.each do |allergy|
+                %option{name: allergy.name, value: allergy.name}= allergy.name
+      %hr
+      .suggestion
+        .col-sm-6
+          Drugs
+          %ul.drugs.list-group
+
+        .col-sm-6
+          Doctors
+          %ul.doctors.list-group
+~~~
+
+**app/assets/javascripts/application.js**
+
+~~~javascript
+// This is a manifest file that'll be compiled into application.js, which will include all the files
+// listed below.
+//
+// Any JavaScript/Coffee file within this directory, lib/assets/javascripts, vendor/assets/javascripts,
+// or any plugin's vendor/assets/javascripts directory can be referenced here using a relative path.
+//
+// It's not advisable to add code directly here, but if you do, it'll appear at the bottom of the
+// compiled file.
+//
+// Read Sprockets README (https://github.com/sstephenson/sprockets#sprockets-directives) for details
+// about supported directives.
+//
+//= require jquery
+//= require jquery_ujs
+//= require turbolinks
+//= require_tree .
+
+window.onload = function(){
+    if(navigator.geolocation) navigator.geolocation.getCurrentPosition(handleGetCurrentPosition);
+};
+
+function handleGetCurrentPosition(location){
+    window.latitude     = location.coords.latitude;
+    window.longitude    = location.coords.longitude;
+}
+
+$(document).ready(function(){
+    var adviseDrug = function(symptoms, age, allergies){
+        $.getJSON('/drugs', {"symptoms": symptoms, "allergies": allergies, age: age, latitude: window.latitude, longitude: window.longitude}).done(function(json){
+            $(".suggestion .drugs").empty();
+            $.each(json, function(key, value){
+                $(".suggestion .drugs").append('<li class="list-group-item">' + value + '</li>');
+            });
+        });
+    };
+
+    var adviseDoctor = function(symptoms, age, allergies){
+        $.getJSON('/doctors', {"symptoms": symptoms, "allergies": allergies, age: age, latitude: window.latitude, longitude: window.longitude}).done(function(json){
+            $(".suggestion .doctors").empty();
+            $.each(json, function(key, value){
+                $(".suggestion .doctors").append('<li class="list-group-item"><span class="badge">' + value + ' km</span>' + key + '</li>');
+            });
+        });
+    };
+
+    var updateSuggestions = function(element){
+        var advisor     = $(element).parents('.advisor');
+        var symptoms    = advisor.find('.symptoms').val();
+        var allergies   = advisor.find('.allergies').val();
+        var age         = advisor.find('.age').val();
+        adviseDrug(symptoms, age, allergies);
+        adviseDoctor(symptoms, age, allergies);
+    };
+
+    var multiselectOptions = {
+        numberDisplayed: 5,
+        buttonWidth: '400px',
+        onChange: function(option, checked, select) {
+            updateSuggestions(option);
+        }
+    };
+
+    $('.advisor select.symptoms').multiselect($.extend({}, multiselectOptions, {
+        nonSelectedText: 'Select symptoms'
+    }));
+
+    $('.advisor select.allergies').multiselect($.extend({}, multiselectOptions, {
+        nonSelectedText: 'Select allergies'
+    }));
+
+    $('.advisor input.age').blur(function(){
+        updateSuggestions(this);
+    });
+
+    $('.advisor input.age').keypress(function(e) {
+        if(e.which == 13) {
+            updateSuggestions(this);
+            e.preventDefault();
+        }
+    });
+});
+~~~
