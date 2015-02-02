@@ -1,5 +1,25 @@
 class ApplicationController < ActionController::Base
-  # Prevent CSRF attacks by raising an exception.
-  # For APIs, you may want to use :null_session instead.
   protect_from_forgery with: :exception
+
+  private
+
+  def symptoms
+    params[:symptoms] || []
+  end
+
+  def allergies
+    params[:allergies] || []
+  end
+
+  def age
+    params[:age].to_i
+  end
+
+  def latitude
+    params[:latitude].to_f
+  end
+
+  def longitude
+    params[:longitude].to_f
+  end
 end

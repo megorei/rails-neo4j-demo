@@ -210,4 +210,81 @@ end
 
 ### Routes and controllers
 
+**config/routes.rb**
+
+~~~ruby
+Rails.application.routes.draw do
+  resources :drugs
+  resources :doctors
+  root to: 'home#index'
+end
+~~~
+
+**app/controllers/application_controller.rb**
+
+~~~ruby
+class ApplicationController < ActionController::Base
+  protect_from_forgery with: :exception
+
+  private
+
+  def symptoms
+    params[:symptoms] || []
+  end
+
+  def allergies
+    params[:allergies] || []
+  end
+
+  def age
+    params[:age].to_i
+  end
+
+  def latitude
+    params[:latitude].to_f
+  end
+
+  def longitude
+    params[:longitude].to_f
+  end
+end
+
+~~~
+
+**app/controllers/home_controller.rb**
+
+~~~ruby
+class HomeController < ApplicationController
+  def index
+    @symptoms  = Symptom.all
+    @allergies = Allergy.all
+  end
+end
+~~~
+
+**app/controllers/drugs_controller.rb**
+
+~~~ruby
+class DrugsController < ApplicationController
+  def index
+    @drugs = DrugAdvisor.new.find(symptoms, age, allergies)
+    render json: @drugs.map(&:name)
+  end
+end
+~~~
+
+**app/controllers/doctors_controller.rb**
+
+~~~ruby
+class DoctorsController < ApplicationController
+  def index
+    results = DoctorAdvisor.new.find(symptoms, age, allergies, latitude, longitude)
+    @doctors = results.inject({}) do |hash, pair|
+      doctor, distance = pair
+      hash.merge!(doctor.name => distance.round(2))
+    end
+    render json: @doctors
+  end
+end
+~~~
 
