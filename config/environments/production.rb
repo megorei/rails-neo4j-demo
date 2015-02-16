@@ -75,5 +75,5 @@ Rails.application.configure do
   config.log_formatter = ::Logger::Formatter.new
 
   config.neo4j.session_type = :server_db
-  config.neo4j.session_path = ENV['GRAPHENEDB_URL']
+  config.neo4j.session_path = ENV['GRAPHENEDB_URL'] || ENV['NEO4J_URL']
 end
