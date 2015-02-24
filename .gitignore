@@ -13,3 +13,4 @@
 /tmp
 .idea
 db/neo4j
+.env
